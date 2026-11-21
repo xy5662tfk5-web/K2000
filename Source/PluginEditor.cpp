@@ -25,12 +25,14 @@ K2000AudioProcessorEditor::K2000AudioProcessorEditor(K2000AudioProcessor& p)
     for (auto* label : { &lcdTitle, &lcdLine1, &lcdLine2, &lcdFooter })
     {
         label->setColour(juce::Label::textColourId, lcdInk);
-        label->setFont(juce::Font(16.0f, juce::Font::bold));
+        label->setFont(juce::Font("Menlo", 15.0f, juce::Font::bold));
         label->setJustificationType(juce::Justification::centredLeft);
         addAndMakeVisible(*label);
     }
-    lcdTitle.setFont(juce::Font(14.0f, juce::Font::bold));
-    lcdFooter.setFont(juce::Font(12.0f));
+    lcdTitle.setFont(juce::Font("Menlo", 13.0f, juce::Font::bold));
+    lcdLine1.setFont(juce::Font("Menlo", 16.0f, juce::Font::bold));
+    lcdLine2.setFont(juce::Font("Menlo", 13.0f, juce::Font::plain));
+    lcdFooter.setFont(juce::Font("Menlo", 11.0f, juce::Font::bold));
     sectionLabel.setText("FRONT PANEL  /  PROGRAM EDITOR", juce::dontSendNotification);
     sectionLabel.setColour(juce::Label::textColourId, juce::Colours::white);
     addAndMakeVisible(sectionLabel);
@@ -111,12 +113,15 @@ void K2000AudioProcessorEditor::chooseMode(const juce::String& mode)
 
 void K2000AudioProcessorEditor::refreshDisplay()
 {
-    lcdTitle.setText("K2000  /  " + processor.getMode(), juce::dontSendNotification);
+    lcdTitle.setText("K2000R     " + processor.getMode() + " MODE       MIDI: CH 1",
+                     juce::dontSendNotification);
     lcdLine1.setText("PROGRAM  " + juce::String(processor.getCurrentProgram() + 1).paddedLeft('0', 3)
-                     + "     " + processor.getProgramName(processor.getCurrentProgram()), juce::dontSendNotification);
+                     + "   " + processor.getProgramName(processor.getCurrentProgram()),
+                     juce::dontSendNotification);
     lcdLine2.setText("LAYER " + juce::String(processor.getCurrentLayer())
-                     + "     V.A.S.T. EDITOR  •  ENGINE UNDER DEVELOPMENT", juce::dontSendNotification);
-    lcdFooter.setText("F1 PROGRAM   F2 KEYMAP   F3 PITCH   F4 AMP   F5 OUTPUT   F6 MORE",
+                     + "     KEYMAP: --      ALG: --      OUTPUT: MAIN",
+                     juce::dontSendNotification);
+    lcdFooter.setText("PITCH     KEYMAP     PITCH     AMP      OUTPUT     MORE",
                       juce::dontSendNotification);
     dataWheel.setValue(processor.getCurrentProgram(), juce::dontSendNotification);
 }
@@ -141,6 +146,13 @@ void K2000AudioProcessorEditor::paint(juce::Graphics& g)
     g.setColour(juce::Colour(0xffcbd8b0));
     g.drawRoundedRectangle(juce::Rectangle<float>(78, 138, 844, 112), 3.0f, 1.0f);
 
+    // Subtle LCD row guides and inset frame; display text remains live JUCE components.
+    g.setColour(juce::Colour(0xff718268).withAlpha(0.22f));
+    for (int y = 162; y < 248; y += 25)
+        g.drawHorizontalLine(y, 88.0f, 912.0f);
+    g.setColour(juce::Colour(0xff40533d).withAlpha(0.45f));
+    g.drawRoundedRectangle(juce::Rectangle<float>(84, 144, 832, 100), 2.0f, 1.0f);
+
     g.setColour(juce::Colours::white.withAlpha(0.18f));
     g.drawHorizontalLine(90, 32.0f, 968.0f);
     g.setColour(juce::Colours::black.withAlpha(0.35f));
@@ -152,10 +164,10 @@ void K2000AudioProcessorEditor::resized()
     brand.setBounds(38, 28, 250, 42);
     model.setBounds(300, 36, 500, 26);
     sectionLabel.setBounds(40, 76, 400, 22);
-    lcdTitle.setBounds(92, 144, 820, 20);
-    lcdLine1.setBounds(92, 169, 820, 24);
-    lcdLine2.setBounds(92, 195, 820, 22);
-    lcdFooter.setBounds(92, 224, 820, 18);
+    lcdTitle.setBounds(94, 145, 815, 18);
+    lcdLine1.setBounds(94, 169, 815, 22);
+    lcdLine2.setBounds(94, 194, 815, 20);
+    lcdFooter.setBounds(94, 222, 815, 18);
 
     programButton.setBounds(42, 315, 105, 36);
     setupButton.setBounds(154, 315, 92, 36);
