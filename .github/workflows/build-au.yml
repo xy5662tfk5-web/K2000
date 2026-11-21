@@ -21,7 +21,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: juce-framework/JUCE
-          ref: 8.0.6
+          ref: 7.0.12
           path: JUCE
 
       - name: Select older Xcode toolchain
