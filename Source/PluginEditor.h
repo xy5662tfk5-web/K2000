@@ -27,7 +27,6 @@ private:
     std::array<juce::Slider, 4> toneControls;
     std::array<juce::Label, 4> toneLabels;
     juce::TextButton diskButton, effectsButton, sampleButton, assignButton;
-    std::vector<juce::TextButton*> allButtons;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(K2000AudioProcessorEditor)
 };
