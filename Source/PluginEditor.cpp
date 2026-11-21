@@ -12,7 +12,7 @@ const juce::Colour amber(0xffd99b42);
 K2000AudioProcessorEditor::K2000AudioProcessorEditor(K2000AudioProcessor& p)
     : AudioProcessorEditor(&p), processor(p)
 {
-    setSize(1000, 620);
+    setSize(1200, 500);
     brand.setText("KURZWEIL", juce::dontSendNotification);
     brand.setFont(juce::Font(25.0f, juce::Font::bold));
     brand.setColour(juce::Label::textColourId, juce::Colours::white);
@@ -128,78 +128,108 @@ void K2000AudioProcessorEditor::refreshDisplay()
 
 void K2000AudioProcessorEditor::paint(juce::Graphics& g)
 {
-    g.fillAll(caseBlack);
-    auto bounds = getLocalBounds().toFloat();
+    g.fillAll(juce::Colour(0xff090b0c));
+
+    const auto panel = getLocalBounds().toFloat().reduced(24.0f, 18.0f);
+
+    // Flat 19-inch rack chassis: square corners, metal faceplate and rack ears.
     g.setColour(juce::Colour(0xff080909));
-    g.fillRoundedRectangle(bounds.reduced(8.0f), 14.0f);
-    g.setColour(panelGrey);
-    g.fillRoundedRectangle(bounds.reduced(16.0f), 10.0f);
+    g.fillRect(panel);
     g.setColour(juce::Colour(0xff777d80));
-    g.drawRoundedRectangle(bounds.reduced(16.0f), 10.0f, 1.5f);
+    g.drawRect(panel, 1.5f);
 
-    g.setColour(juce::Colour(0xff202427));
-    g.fillRoundedRectangle(juce::Rectangle<float>(35, 105, 930, 180), 8.0f);
-    g.setColour(juce::Colour(0xff090c0b));
-    g.fillRoundedRectangle(juce::Rectangle<float>(65, 125, 870, 138), 5.0f);
-    g.setColour(lcdGreen);
-    g.fillRoundedRectangle(juce::Rectangle<float>(78, 138, 844, 112), 3.0f);
+    g.setColour(juce::Colour(0xff252a2d));
+    g.fillRect(panel.reduced(18.0f, 8.0f));
+    g.setColour(juce::Colour(0xff50575b));
+    g.drawRect(panel.reduced(18.0f, 8.0f), 1.0f);
+
+    // Rack mounting flanges and four recessed screw heads.
+    g.setColour(juce::Colour(0xff171b1e));
+    g.fillRect(24.0f, 18.0f, 42.0f, getHeight() - 36.0f);
+    g.fillRect((float)getWidth() - 66.0f, 18.0f, 42.0f, getHeight() - 36.0f);
+    g.setColour(juce::Colour(0xff858b8e));
+    g.drawRect(24.0f, 18.0f, 42.0f, getHeight() - 36.0f, 1.0f);
+    g.drawRect((float)getWidth() - 66.0f, 18.0f, 42.0f, getHeight() - 36.0f, 1.0f);
+
+    for (float x : { 45.0f, (float)getWidth() - 45.0f })
+        for (float y : { 48.0f, (float)getHeight() - 48.0f })
+        {
+            g.setColour(juce::Colour(0xff080a0b));
+            g.fillEllipse(x - 7.0f, y - 7.0f, 14.0f, 14.0f);
+            g.setColour(juce::Colour(0xff92999c));
+            g.drawEllipse(x - 7.0f, y - 7.0f, 14.0f, 14.0f, 1.2f);
+            g.drawLine(x - 3.5f, y, x + 3.5f, y, 1.0f);
+        }
+
+    // Recessed rectangular LCD bezel.
+    g.setColour(juce::Colour(0xff101416));
+    g.fillRect(110.0f, 106.0f, (float)getWidth() - 220.0f, 150.0f);
+    g.setColour(juce::Colour(0xff080a0b));
+    g.fillRect(126.0f, 120.0f, (float)getWidth() - 252.0f, 122.0f);
+    g.setColour(juce::Colour(0xffb8c79a));
+    g.fillRect(138.0f, 132.0f, (float)getWidth() - 276.0f, 98.0f);
     g.setColour(juce::Colour(0xffcbd8b0));
-    g.drawRoundedRectangle(juce::Rectangle<float>(78, 138, 844, 112), 3.0f, 1.0f);
+    g.drawRect(138.0f, 132.0f, (float)getWidth() - 276.0f, 98.0f, 1.0f);
 
-    // Subtle LCD row guides and inset frame; display text remains live JUCE components.
     g.setColour(juce::Colour(0xff718268).withAlpha(0.22f));
-    for (int y = 162; y < 248; y += 25)
-        g.drawHorizontalLine(y, 88.0f, 912.0f);
+    for (int y = 155; y < 230; y += 24)
+        g.drawHorizontalLine(y, 145.0f, (float)getWidth() - 145.0f);
     g.setColour(juce::Colour(0xff40533d).withAlpha(0.45f));
-    g.drawRoundedRectangle(juce::Rectangle<float>(84, 144, 832, 100), 2.0f, 1.0f);
+    g.drawRect(144.0f, 138.0f, (float)getWidth() - 288.0f, 86.0f, 1.0f);
 
-    g.setColour(juce::Colours::white.withAlpha(0.18f));
-    g.drawHorizontalLine(90, 32.0f, 968.0f);
-    g.setColour(juce::Colours::black.withAlpha(0.35f));
-    g.drawHorizontalLine(590, 32.0f, 968.0f);
+    // Fine horizontal faceplate highlights.
+    g.setColour(juce::Colours::white.withAlpha(0.12f));
+    g.drawHorizontalLine(82, 70.0f, (float)getWidth() - 70.0f);
+    g.setColour(juce::Colours::black.withAlpha(0.45f));
+    g.drawHorizontalLine(getHeight() - 24, 70.0f, (float)getWidth() - 70.0f);
 }
 
 void K2000AudioProcessorEditor::resized()
 {
-    brand.setBounds(38, 28, 250, 42);
-    model.setBounds(300, 36, 500, 26);
-    sectionLabel.setBounds(40, 76, 400, 22);
-    lcdTitle.setBounds(94, 145, 815, 18);
-    lcdLine1.setBounds(94, 169, 815, 22);
-    lcdLine2.setBounds(94, 194, 815, 20);
-    lcdFooter.setBounds(94, 222, 815, 18);
+    const int w = getWidth();
+    brand.setBounds(82, 28, 250, 42);
+    model.setBounds(350, 36, 520, 26);
+    sectionLabel.setBounds(82, 76, 420, 22);
 
-    programButton.setBounds(42, 315, 105, 36);
-    setupButton.setBounds(154, 315, 92, 36);
-    midiButton.setBounds(253, 315, 82, 36);
-    masterButton.setBounds(342, 315, 92, 36);
-    editButton.setBounds(441, 315, 82, 36);
-    diskButton.setBounds(530, 315, 82, 36);
-    effectsButton.setBounds(619, 315, 92, 36);
-    sampleButton.setBounds(718, 315, 92, 36);
-    assignButton.setBounds(817, 315, 92, 36);
+    lcdTitle.setBounds(152, 137, w - 304, 18);
+    lcdLine1.setBounds(152, 160, w - 304, 22);
+    lcdLine2.setBounds(152, 184, w - 304, 20);
+    lcdFooter.setBounds(152, 211, w - 304, 18);
+
+    // Main mode keys sit below the display in one straight rack-style row.
+    const int modeY = 280;
+    const int modeW = 94;
+    const int modeGap = 8;
+    const int modeStart = 82;
+    std::array<juce::TextButton*, 9> modes {
+        &programButton, &setupButton, &midiButton, &masterButton, &editButton,
+        &diskButton, &effectsButton, &sampleButton, &assignButton
+    };
+    for (int i = 0; i < 9; ++i)
+        modes[static_cast<size_t>(i)]->setBounds(modeStart + i * (modeW + modeGap), modeY, modeW, 34);
 
     std::array<juce::TextButton*, 6> soft { &soft1, &soft2, &soft3, &soft4, &soft5, &soft6 };
     for (int i = 0; i < 6; ++i)
-        soft[static_cast<size_t>(i)]->setBounds(78 + i * 142, 270, 112, 28);
+        soft[static_cast<size_t>(i)]->setBounds(138 + i * ((w - 276) / 6), 244, (w - 300) / 6, 25);
 
-    prevButton.setBounds(45, 385, 76, 34);
-    nextButton.setBounds(127, 385, 76, 34);
-    enterButton.setBounds(45, 426, 76, 34);
-    cancelButton.setBounds(127, 426, 76, 34);
-    upButton.setBounds(225, 385, 62, 34);
-    downButton.setBounds(225, 426, 62, 34);
+    prevButton.setBounds(90, 352, 70, 32);
+    nextButton.setBounds(166, 352, 70, 32);
+    enterButton.setBounds(90, 390, 70, 32);
+    cancelButton.setBounds(166, 390, 70, 32);
+    upButton.setBounds(250, 352, 58, 32);
+    downButton.setBounds(250, 390, 58, 32);
 
-    layer1.setBounds(320, 385, 92, 34);
-    layer2.setBounds(320, 426, 92, 34);
-    layer3.setBounds(320, 467, 92, 34);
+    layer1.setBounds(350, 352, 86, 32);
+    layer2.setBounds(350, 390, 86, 32);
+    layer3.setBounds(350, 428, 86, 32);
 
     for (size_t i = 0; i < keypad.size(); ++i)
     {
         const int col = static_cast<int>(i % 3);
         const int row = static_cast<int>(i / 3);
-        keypad[i]->setBounds(470 + col * 52, 380 + row * 42, 44, 34);
+        keypad[i]->setBounds(500 + col * 48, 346 + row * 38, 42, 30);
     }
-    dataWheel.setBounds(700, 370, 130, 130);
-    wheelLabel.setBounds(670, 500, 190, 24);
+
+    dataWheel.setBounds(w - 270, 330, 112, 112);
+    wheelLabel.setBounds(w - 302, 442, 176, 20);
 }
