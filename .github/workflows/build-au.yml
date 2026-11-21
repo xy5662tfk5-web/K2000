@@ -54,8 +54,13 @@ jobs:
       - name: Validate AU with Apple's Audio Unit validator
         run: |
           set -o pipefail
-          mkdir -p "$HOME/Library/Audio/Plug-Ins/Components"
-          ditto "build/K2000_artefacts/Release/AU/K2000.component" "$HOME/Library/Audio/Plug-Ins/Components/K2000.component"
+          sudo mkdir -p "/Library/Audio/Plug-Ins/Components"
+          sudo ditto "build/K2000_artefacts/Release/AU/K2000.component" "/Library/Audio/Plug-Ins/Components/K2000.component"
+          sudo xattr -dr com.apple.quarantine "/Library/Audio/Plug-Ins/Components/K2000.component" || true
+          killall -9 AudioComponentRegistrar || true
+          sleep 3
+          /usr/bin/auval -a | tee au-components.log
+          grep -F "K2Au" au-components.log
           /usr/bin/auval -v aumu K2Au K2Lb | tee auval-validation.log
           grep -q "PASS" auval-validation.log
 
