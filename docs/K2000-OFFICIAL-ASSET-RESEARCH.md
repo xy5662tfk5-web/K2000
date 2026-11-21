@@ -106,3 +106,20 @@ Sources:
 - https://github.com/psobot/k2000/blob/main/k2000/messages.py
 - https://github.com/psobot/k2000/blob/main/k2000/client.py
 - https://www.sweetwater.com/sweetcare/kurzweil-k2000-sounds-and-software/
+
+## Historical offline inventory utility: K2KList
+
+A Sweetwater archive page documents two old K2KList utilities:
+- PC archive: `k2klist.zip` (8 KB), described as listing all objects in a K2000 disk file with object size and ID.
+- Mac utility: `k2klist.mac` (51 KB), also described as listing all objects stored in a K2000 disk file.
+
+The page also links to a short PC text file and a Mac "about" file. The direct Mac binary endpoint was identified, but its contents were not successfully retrieved or inspected during this research pass. Compatibility with current macOS is unknown. Do not assume this 1990s utility runs on a modern Mac.
+
+This is a stronger lead for the offline disk-file/object inventory problem than a generic printable-string scan. Next research task is to obtain and inspect the small K2KList documentation/binary (or a preserved source/disassembly) and compare its behavior with the modern psobot/k2000 SysEx object model.
+
+Source page:
+- https://www.sweetwater.com/sweetcare/kurzweil-k2000-sounds-and-software/
+- PC utility: https://www.sweetwater.com/k2000/software/pc/k2klist.zip
+- PC description: https://www.sweetwater.com/k2000/software/pc/k2klist.txt
+- Mac utility: https://www.sweetwater.com/k2000/software/mac/k2klist.mac
+- Mac description: https://www.sweetwater.com/k2000/software/mac/k2klist.about
