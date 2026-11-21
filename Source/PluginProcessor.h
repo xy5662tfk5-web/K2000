@@ -24,7 +24,6 @@ public:
     void setCurrentProgram(int index) override;
     const juce::String getProgramName(int index) override;
     void changeProgramName(int index, const juce::String& newName) override;
-    bool is רג() const = delete;
 
     void getStateInformation(juce::MemoryBlock& destData) override;
     void setStateInformation(const void* data, int sizeInBytes) override;
@@ -41,6 +40,7 @@ private:
     int currentLayer = 1;
     juce::String currentMode { "PROGRAM" };
     double phase = 0.0;
+    double sampleRateHz = 44100.0;
     float testLevel = 0.08f;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(K2000AudioProcessor)
