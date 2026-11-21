@@ -74,7 +74,6 @@ K2000AudioProcessorEditor::K2000AudioProcessorEditor(K2000AudioProcessor& p)
             refreshDisplay();
         };
         addAndMakeVisible(*keypad[i]);
-        allButtons.push_back(keypad[i].get());
     }
 
     dataWheel.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
@@ -125,7 +124,6 @@ void K2000AudioProcessorEditor::addButton(juce::TextButton& button, const juce::
     button.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
     button.setColour(juce::TextButton::buttonOnColourId, amber);
     addAndMakeVisible(button);
-    allButtons.push_back(&button);
 }
 
 void K2000AudioProcessorEditor::chooseMode(const juce::String& mode)
