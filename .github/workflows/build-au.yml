@@ -10,7 +10,8 @@ permissions:
 
 jobs:
   build-au:
-    # Intel runner produces an x86_64 AU for the user's Intel Mac.
+    # Intel runner produces an x86_64 AU. Pin the older Xcode 15.4 toolchain:
+    # Xcode 16's libc++ emitted a symbol unavailable on macOS Monterey.
     runs-on: macos-15-intel
     steps:
       - name: Check out K2000
@@ -23,8 +24,14 @@ jobs:
           ref: 8.0.6
           path: JUCE
 
+      - name: Select Monterey-compatible Xcode toolchain
+        run: |
+          sudo xcode-select --switch /Applications/Xcode_15.4.app/Contents/Developer
+          xcodebuild -version
+          xcrun --sdk macosx --show-sdk-version
+
       - name: Configure
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0 -DCMAKE_OSX_ARCHITECTURES=x86_64
 
       - name: Build Audio Unit
         run: cmake --build build --config Release --target K2000_AU --parallel 3
@@ -38,6 +45,10 @@ jobs:
         run: |
           test -d "build/K2000_artefacts/Release/AU/K2000.component"
           file "build/K2000_artefacts/Release/AU/K2000.component/Contents/MacOS/K2000"
+          if nm -u "build/K2000_artefacts/Release/AU/K2000.component/Contents/MacOS/K2000" | grep -q '__from_native_exception_pointer'; then
+            echo "ERROR: binary still references a libc++ symbol unavailable on Monterey"
+            exit 1
+          fi
           plutil -lint "build/K2000_artefacts/Release/AU/K2000.component/Contents/Info.plist"
 
       - name: Package AU bundle
