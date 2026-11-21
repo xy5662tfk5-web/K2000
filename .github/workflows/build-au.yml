@@ -1,0 +1,42 @@
+name: macOS AU build
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-au:
+    # Intel runner produces an x86_64 AU for the user's Intel Mac.
+    runs-on: macos-15-intel
+    steps:
+      - name: Check out K2000
+        uses: actions/checkout@v4
+
+      - name: Check out JUCE
+        uses: actions/checkout@v4
+        with:
+          repository: juce-framework/JUCE
+          ref: 8.0.6
+          path: JUCE
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build Audio Unit
+        run: cmake --build build --config Release --target K2000_AU --parallel 3
+
+      - name: Verify AU bundle exists
+        run: |
+          test -d "build/K2000_artefacts/Release/AU/K2000.component"
+          file "build/K2000_artefacts/Release/AU/K2000.component/Contents/MacOS/K2000"
+
+      - name: Upload AU artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: K2000-AU-macOS-Intel
+          path: build/K2000_artefacts/Release/AU/K2000.component
+          if-no-files-found: error
