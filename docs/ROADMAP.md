@@ -14,7 +14,10 @@
 - [ ] Add file chooser and bank/program browser
 
 ## Stage 2 — formats and model
-- [ ] Research KRZ/K25 format and legal sample/ROM boundaries
+- [x] Record official K2KFARM archive member inventory supplied by the user
+- [x] Document distinction between preset/object banks and factory sample ROM
+- [ ] Obtain at least one actual `.KRZ` file byte-for-byte for format inspection
+- [ ] Identify container/header/object records from real file bytes; do not infer layout from extension or filename
 - [ ] Build parser tests from user-supplied lawful example files
 - [ ] Model programs, layers, keymaps, algorithms and modulation routes
 
