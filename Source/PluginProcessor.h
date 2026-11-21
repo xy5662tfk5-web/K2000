@@ -60,7 +60,7 @@ private:
     double sampleRateHz = 44100.0;
     std::array<Voice, 16> voices {};
     juce::dsp::StateVariableTPTFilter<float> filter;
-    juce::dsp::Reverb reverb;
+    juce::Reverb reverb;
     juce::dsp::Reverb::Parameters reverbParams;
     float attack = 0.015f, release = 0.25f, cutoff = 12000.0f, reverbMix = 0.12f;
 
