@@ -3,25 +3,25 @@
 #include <cmath>
 
 K2000AudioProcessor::K2000AudioProcessor()
-    : AudioProcessor(BusesProperties().withOutput("Output", juce::AudioChannelSet::stereo(), true)),
-      parameters(*this, nullptr, "K2000_STATE", {})
+    : AudioProcessor(BusesProperties().withOutput("Output", juce::AudioChannelSet::stereo(), true))
 {
     filter.setType(juce::dsp::StateVariableTPTFilterType::lowpass);
-    filter.setCutoffFrequency(cutoff);
+    filter.setCutoffFrequency(cutoff.load(std::memory_order_relaxed));
     reverbParams.roomSize = 0.45f;
     reverbParams.damping = 0.55f;
-    reverbParams.wetLevel = reverbMix;
-    reverbParams.dryLevel = 1.0f - reverbMix;
+    reverbParams.wetLevel = reverbMix.load(std::memory_order_relaxed);
+    reverbParams.dryLevel = 1.0f - reverbParams.wetLevel;
     reverb.setParameters(reverbParams);
 }
 
 void K2000AudioProcessor::prepareToPlay(double sampleRate, int)
 {
-    sampleRateHz = sampleRate;
+    sampleRateHz = juce::jmax(1.0, sampleRate);
     filter.reset();
-    filter.prepare({ sampleRate, 512, static_cast<juce::uint32>(getTotalNumOutputChannels()) });
+    filter.prepare({ sampleRateHz, 512, static_cast<juce::uint32>(getTotalNumOutputChannels()) });
     reverb.reset();
-    for (auto& voice : voices) voice = {};
+    for (auto& voice : voices)
+        voice = {};
 }
 
 void K2000AudioProcessor::releaseResources() {}
@@ -34,42 +34,56 @@ bool K2000AudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) con
 
 void K2000AudioProcessor::noteOn(int note, float velocity)
 {
-    auto* target = &voices[0];
+    auto* target = &voices.front();
     for (auto& voice : voices)
         if (!voice.active) { target = &voice; break; }
+
     *target = {};
     target->note = note;
-    target->velocity = velocity;
+    target->velocity = juce::jlimit(0.0f, 1.0f, velocity);
     target->held = target->active = true;
 }
 
 void K2000AudioProcessor::noteOff(int note)
 {
     for (auto& voice : voices)
-        if (voice.active && voice.note == note) voice.held = false;
+        if (voice.active && voice.note == note)
+            voice.held = false;
 }
 
-void K2000AudioProcessor::renderVoice(Voice& voice, juce::AudioBuffer<float>& buffer, int start, int count)
+void K2000AudioProcessor::renderVoice(Voice& voice, juce::AudioBuffer<float>& buffer,
+                                      int start, int count)
 {
-    if (!voice.active) return;
+    if (!voice.active || count <= 0 || buffer.getNumChannels() <= 0)
+        return;
+
     const double frequency = juce::MidiMessage::getMidiNoteInHertz(voice.note);
     const double increment = juce::MathConstants<double>::twoPi * frequency / sampleRateHz;
-    const float attackStep = 1.0f / juce::jmax(1.0f, attack * static_cast<float>(sampleRateHz));
-    const float releaseStep = 1.0f / juce::jmax(1.0f, release * static_cast<float>(sampleRateHz));
+    const float attackSeconds = attack.load(std::memory_order_relaxed);
+    const float releaseSeconds = release.load(std::memory_order_relaxed);
+    const float attackStep = 1.0f / juce::jmax(1.0f, attackSeconds * static_cast<float>(sampleRateHz));
+    const float releaseStep = 1.0f / juce::jmax(1.0f, releaseSeconds * static_cast<float>(sampleRateHz));
+
     for (int i = 0; i < count; ++i)
     {
         if (voice.held) voice.envelope = juce::jmin(1.0f, voice.envelope + attackStep);
         else voice.envelope = juce::jmax(0.0f, voice.envelope - releaseStep);
-        if (!voice.held && voice.envelope <= 0.00001f) { voice.active = false; break; }
 
-        // Initial playable oscillator: a bright sawtooth with a little pulse component.
+        if (!voice.held && voice.envelope <= 0.00001f)
+        {
+            voice.active = false;
+            break;
+        }
+
         const float saw = static_cast<float>((voice.phase / juce::MathConstants<double>::pi) - 1.0);
         const float pulse = std::sin(voice.phase) >= 0.0 ? 0.22f : -0.22f;
         const float sample = (saw * 0.72f + pulse) * voice.envelope * voice.velocity * 0.13f;
-        for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
-            buffer.addSample(ch, start + i, sample);
+        for (int channel = 0; channel < buffer.getNumChannels(); ++channel)
+            buffer.addSample(channel, start + i, sample);
+
         voice.phase += increment;
-        if (voice.phase >= juce::MathConstants<double>::twoPi) voice.phase -= juce::MathConstants<double>::twoPi;
+        if (voice.phase >= juce::MathConstants<double>::twoPi)
+            voice.phase -= juce::MathConstants<double>::twoPi;
     }
 }
 
@@ -77,88 +91,151 @@ void K2000AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
 {
     juce::ScopedNoDenormals noDenormals;
     buffer.clear();
-
+    const int numSamples = buffer.getNumSamples();
     int cursor = 0;
+
     for (const auto metadata : midi)
     {
         const auto message = metadata.getMessage();
-        const int position = juce::jlimit(0, buffer.getNumSamples(), metadata.samplePosition);
-        for (auto& voice : voices) renderVoice(voice, buffer, cursor, position - cursor);
+        const int position = juce::jlimit(cursor, numSamples, metadata.samplePosition);
+        for (auto& voice : voices)
+            renderVoice(voice, buffer, cursor, position - cursor);
         cursor = position;
 
-        if (message.isNoteOn()) noteOn(message.getNoteNumber(), message.getFloatVelocity());
-        else if (message.isNoteOff()) noteOff(message.getNoteNumber());
-        else if (message.isProgramChange()) setCurrentProgram(message.getProgramChangeNumber());
+        if (message.isNoteOn())
+            noteOn(message.getNoteNumber(), message.getFloatVelocity());
+        else if (message.isNoteOff())
+            noteOff(message.getNoteNumber());
+        else if (message.isProgramChange())
+            setCurrentProgram(message.getProgramChangeNumber());
     }
-    for (auto& voice : voices) renderVoice(voice, buffer, cursor, buffer.getNumSamples() - cursor);
+
+    for (auto& voice : voices)
+        renderVoice(voice, buffer, cursor, numSamples - cursor);
     midi.clear();
 
-    filter.setCutoffFrequency(cutoff);
+    const float currentCutoff = cutoff.load(std::memory_order_relaxed);
+    const float currentReverbMix = reverbMix.load(std::memory_order_relaxed);
+    filter.setCutoffFrequency(currentCutoff);
     juce::dsp::AudioBlock<float> block(buffer);
     juce::dsp::ProcessContextReplacing<float> context(block);
     filter.process(context);
-    reverbParams.wetLevel = reverbMix;
-    reverbParams.dryLevel = 1.0f - reverbMix * 0.55f;
+
+    reverbParams.wetLevel = currentReverbMix;
+    reverbParams.dryLevel = 1.0f - currentReverbMix * 0.55f;
     reverb.setParameters(reverbParams);
-    if (buffer.getNumChannels() > 1)
-        reverb.processStereo(buffer.getWritePointer(0), buffer.getWritePointer(1), buffer.getNumSamples());
+    if (buffer.getNumChannels() == 2)
+        reverb.processStereo(buffer.getWritePointer(0), buffer.getWritePointer(1), numSamples);
     else if (buffer.getNumChannels() == 1)
-        reverb.processMono(buffer.getWritePointer(0), buffer.getNumSamples());
+        reverb.processMono(buffer.getWritePointer(0), numSamples);
 }
 
-void K2000AudioProcessor::setCurrentProgram(int index) { currentProgram = juce::jlimit(0, 127, index); }
-const juce::String K2000AudioProcessor::getProgramName(int index) { return "Program " + juce::String(index + 1).paddedLeft('0', 3); }
+int K2000AudioProcessor::getCurrentProgram()
+{
+    return currentProgram.load(std::memory_order_relaxed);
+}
+
+void K2000AudioProcessor::setCurrentProgram(int index)
+{
+    currentProgram.store(juce::jlimit(0, 127, index), std::memory_order_relaxed);
+}
+
+const juce::String K2000AudioProcessor::getProgramName(int index)
+{
+    return "Program " + juce::String(juce::jlimit(0, 127, index) + 1).paddedLeft('0', 3);
+}
+
 void K2000AudioProcessor::changeProgramName(int, const juce::String&) {}
-void K2000AudioProcessor::selectMode(const juce::String& mode) { currentMode = mode; }
-juce::String K2000AudioProcessor::getMode() const { return currentMode; }
-void K2000AudioProcessor::setCurrentLayer(int layer) { currentLayer = juce::jlimit(1, 3, layer); }
-int K2000AudioProcessor::getCurrentLayer() const { return currentLayer; }
-void K2000AudioProcessor::selectProgramByStep(int delta) { setCurrentProgram((currentProgram + delta + 128) % 128); }
+
+void K2000AudioProcessor::selectMode(const juce::String& mode)
+{
+    const juce::ScopedLock lock(modeLock);
+    currentMode = mode;
+}
+
+juce::String K2000AudioProcessor::getMode() const
+{
+    const juce::ScopedLock lock(modeLock);
+    return currentMode;
+}
+
+void K2000AudioProcessor::setCurrentLayer(int layer)
+{
+    currentLayer.store(juce::jlimit(1, 3, layer), std::memory_order_relaxed);
+}
+
+int K2000AudioProcessor::getCurrentLayer() const
+{
+    return currentLayer.load(std::memory_order_relaxed);
+}
+
+void K2000AudioProcessor::selectProgramByStep(int delta)
+{
+    int previous = currentProgram.load(std::memory_order_relaxed);
+    int next = 0;
+    do
+    {
+        next = (previous + delta + 128) % 128;
+    }
+    while (!currentProgram.compare_exchange_weak(previous, next, std::memory_order_relaxed));
+}
 
 void K2000AudioProcessor::setToneParameter(const juce::String& name, float value)
 {
-    if (name == "CUTOFF") cutoff = juce::jlimit(80.0f, 18000.0f, value);
-    else if (name == "ATTACK") attack = juce::jlimit(0.001f, 3.0f, value);
-    else if (name == "RELEASE") release = juce::jlimit(0.02f, 5.0f, value);
-    else if (name == "REVERB") reverbMix = juce::jlimit(0.0f, 1.0f, value);
+    if (name == "CUTOFF") cutoff.store(juce::jlimit(80.0f, 18000.0f, value), std::memory_order_relaxed);
+    else if (name == "ATTACK") attack.store(juce::jlimit(0.001f, 3.0f, value), std::memory_order_relaxed);
+    else if (name == "RELEASE") release.store(juce::jlimit(0.02f, 5.0f, value), std::memory_order_relaxed);
+    else if (name == "REVERB") reverbMix.store(juce::jlimit(0.0f, 1.0f, value), std::memory_order_relaxed);
 }
+
 float K2000AudioProcessor::getToneParameter(const juce::String& name) const
 {
-    if (name == "CUTOFF") return cutoff;
-    if (name == "ATTACK") return attack;
-    if (name == "RELEASE") return release;
-    if (name == "REVERB") return reverbMix;
+    if (name == "CUTOFF") return cutoff.load(std::memory_order_relaxed);
+    if (name == "ATTACK") return attack.load(std::memory_order_relaxed);
+    if (name == "RELEASE") return release.load(std::memory_order_relaxed);
+    if (name == "REVERB") return reverbMix.load(std::memory_order_relaxed);
     return 0.0f;
 }
 
 void K2000AudioProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
     juce::ValueTree state("K2000");
-    state.setProperty("program", currentProgram, nullptr);
-    state.setProperty("layer", currentLayer, nullptr);
-    state.setProperty("mode", currentMode, nullptr);
-    state.setProperty("cutoff", cutoff, nullptr);
-    state.setProperty("attack", attack, nullptr);
-    state.setProperty("release", release, nullptr);
-    state.setProperty("reverb", reverbMix, nullptr);
-    if (auto xml = state.createXml()) copyXmlToBinary(*xml, destData);
+    state.setProperty("program", getCurrentProgram(), nullptr);
+    state.setProperty("layer", getCurrentLayer(), nullptr);
+    state.setProperty("mode", getMode(), nullptr);
+    state.setProperty("cutoff", getToneParameter("CUTOFF"), nullptr);
+    state.setProperty("attack", getToneParameter("ATTACK"), nullptr);
+    state.setProperty("release", getToneParameter("RELEASE"), nullptr);
+    state.setProperty("reverb", getToneParameter("REVERB"), nullptr);
+    if (auto xml = state.createXml())
+        copyXmlToBinary(*xml, destData);
 }
+
 void K2000AudioProcessor::setStateInformation(const void* data, int sizeInBytes)
 {
+    if (data == nullptr || sizeInBytes <= 0)
+        return;
     if (auto xml = getXmlFromBinary(data, sizeInBytes))
     {
         const auto state = juce::ValueTree::fromXml(*xml);
-        if (state.hasType("K2000"))
-        {
-            setCurrentProgram(static_cast<int>(state.getProperty("program", 0)));
-            setCurrentLayer(static_cast<int>(state.getProperty("layer", 1)));
-            currentMode = state.getProperty("mode", "PROGRAM").toString();
-            setToneParameter("CUTOFF", state.getProperty("cutoff", 12000.0f));
-            setToneParameter("ATTACK", state.getProperty("attack", 0.015f));
-            setToneParameter("RELEASE", state.getProperty("release", 0.25f));
-            setToneParameter("REVERB", state.getProperty("reverb", 0.12f));
-        }
+        if (!state.hasType("K2000"))
+            return;
+        setCurrentProgram(static_cast<int>(state.getProperty("program", 0)));
+        setCurrentLayer(static_cast<int>(state.getProperty("layer", 1)));
+        selectMode(state.getProperty("mode", "PROGRAM").toString());
+        setToneParameter("CUTOFF", static_cast<float>(state.getProperty("cutoff", 12000.0f)));
+        setToneParameter("ATTACK", static_cast<float>(state.getProperty("attack", 0.015f)));
+        setToneParameter("RELEASE", static_cast<float>(state.getProperty("release", 0.25f)));
+        setToneParameter("REVERB", static_cast<float>(state.getProperty("reverb", 0.12f)));
     }
 }
-juce::AudioProcessorEditor* K2000AudioProcessor::createEditor() { return new K2000AudioProcessorEditor(*this); }
-juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter() { return new K2000AudioProcessor(); }
+
+juce::AudioProcessorEditor* K2000AudioProcessor::createEditor()
+{
+    return new K2000AudioProcessorEditor(*this);
+}
+
+juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
+{
+    return new K2000AudioProcessor();
+}
