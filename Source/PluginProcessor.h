@@ -1,5 +1,6 @@
 #pragma once
 #include <JuceHeader.h>
+#include <array>
 
 class K2000AudioProcessor final : public juce::AudioProcessor
 {
@@ -18,7 +19,7 @@ public:
     bool acceptsMidi() const override { return true; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
-    double getTailLengthSeconds() const override { return 0.0; }
+    double getTailLengthSeconds() const override { return 2.0; }
     int getNumPrograms() override { return 128; }
     int getCurrentProgram() override { return currentProgram; }
     void setCurrentProgram(int index) override;
@@ -34,14 +35,34 @@ public:
     int getCurrentLayer() const;
     void selectProgramByStep(int delta);
 
+    void setToneParameter(const juce::String& name, float value);
+    float getToneParameter(const juce::String& name) const;
+
 private:
+    struct Voice
+    {
+        int note = -1;
+        float velocity = 0.0f;
+        double phase = 0.0;
+        float envelope = 0.0f;
+        bool held = false;
+        bool active = false;
+    };
+
+    void noteOn(int note, float velocity);
+    void noteOff(int note);
+    void renderVoice(Voice& voice, juce::AudioBuffer<float>& buffer, int start, int count);
+
     juce::AudioProcessorValueTreeState parameters;
     int currentProgram = 0;
     int currentLayer = 1;
     juce::String currentMode { "PROGRAM" };
-    double phase = 0.0;
     double sampleRateHz = 44100.0;
-    float testLevel = 0.08f;
+    std::array<Voice, 16> voices {};
+    juce::dsp::StateVariableTPTFilter<float> filter;
+    juce::dsp::Reverb reverb;
+    juce::dsp::Reverb::Parameters reverbParams;
+    float attack = 0.015f, release = 0.25f, cutoff = 12000.0f, reverbMix = 0.12f;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(K2000AudioProcessor)
 };
