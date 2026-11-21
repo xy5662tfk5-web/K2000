@@ -24,6 +24,8 @@ private:
     std::array<std::unique_ptr<juce::TextButton>, 12> keypad;
     juce::Slider dataWheel;
     juce::Label wheelLabel;
+    std::array<juce::Slider, 4> toneControls;
+    std::array<juce::Label, 4> toneLabels;
     juce::TextButton diskButton, effectsButton, sampleButton, assignButton;
     std::vector<juce::TextButton*> allButtons;
 
