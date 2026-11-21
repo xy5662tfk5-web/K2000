@@ -17,6 +17,8 @@
 - [x] Record official K2KFARM archive member inventory supplied by the user
 - [x] Document distinction between preset/object banks and factory sample ROM
 - [ ] Obtain at least one actual `.KRZ` file byte-for-byte for format inspection
+- [x] Identify and document psobot/k2000 as a SysEx/object-payload reference (not an offline KRZ parser)
+- [x] Identify historical K2KList PC/Mac offline object-inventory utilities
 - [x] Add a standard-library printable-string scanner with byte offsets (reconnaissance only)
 - [ ] Identify container/header/object records from real file bytes; do not infer layout from extension or filename
 - [ ] Build parser tests from user-supplied lawful example files
