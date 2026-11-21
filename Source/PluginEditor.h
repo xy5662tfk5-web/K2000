@@ -15,7 +15,7 @@ private:
     void chooseMode(const juce::String& mode);
     void addButton(juce::TextButton& button, const juce::String& text, std::function<void()> action);
 
-    K2000AudioProcessor& processor;
+    K2000AudioProcessor& proc;
     juce::Label brand, model, lcdTitle, lcdLine1, lcdLine2, lcdFooter, sectionLabel;
     juce::TextButton programButton, setupButton, midiButton, masterButton, editButton;
     juce::TextButton soft1, soft2, soft3, soft4, soft5, soft6;
