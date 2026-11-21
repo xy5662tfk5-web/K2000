@@ -10,7 +10,7 @@ const juce::Colour amber(0xffd99b42);
 }
 
 K2000AudioProcessorEditor::K2000AudioProcessorEditor(K2000AudioProcessor& p)
-    : AudioProcessorEditor(&p), processor(p)
+    : AudioProcessorEditor(&p), proc(p)
 {
     setSize(1200, 500);
     brand.setText("KURZWEIL", juce::dontSendNotification);
@@ -50,27 +50,27 @@ K2000AudioProcessorEditor::K2000AudioProcessorEditor(K2000AudioProcessor& p)
     std::array<juce::TextButton*, 6> soft { &soft1, &soft2, &soft3, &soft4, &soft5, &soft6 };
     for (int i = 0; i < 6; ++i)
         addButton(*soft[static_cast<size_t>(i)], "F" + juce::String(i + 1), [this, i] {
-            processor.selectMode("SOFT KEY " + juce::String(i + 1));
+            proc.selectMode("SOFT KEY " + juce::String(i + 1));
             refreshDisplay();
         });
 
-    addButton(prevButton, "PREV", [this] { processor.selectProgramByStep(-1); refreshDisplay(); });
-    addButton(nextButton, "NEXT", [this] { processor.selectProgramByStep(1); refreshDisplay(); });
-    addButton(enterButton, "ENTER", [this] { processor.selectMode("ENTER"); refreshDisplay(); });
-    addButton(cancelButton, "CANCEL", [this] { processor.selectMode("PROGRAM"); refreshDisplay(); });
-    addButton(upButton, "▲", [this] { processor.setCurrentLayer(processor.getCurrentLayer() - 1); refreshDisplay(); });
-    addButton(downButton, "▼", [this] { processor.setCurrentLayer(processor.getCurrentLayer() + 1); refreshDisplay(); });
+    addButton(prevButton, "PREV", [this] { proc.selectProgramByStep(-1); refreshDisplay(); });
+    addButton(nextButton, "NEXT", [this] { proc.selectProgramByStep(1); refreshDisplay(); });
+    addButton(enterButton, "ENTER", [this] { proc.selectMode("ENTER"); refreshDisplay(); });
+    addButton(cancelButton, "CANCEL", [this] { proc.selectMode("PROGRAM"); refreshDisplay(); });
+    addButton(upButton, "▲", [this] { proc.setCurrentLayer(proc.getCurrentLayer() - 1); refreshDisplay(); });
+    addButton(downButton, "▼", [this] { proc.setCurrentLayer(proc.getCurrentLayer() + 1); refreshDisplay(); });
 
-    addButton(layer1, "LAYER 1", [this] { processor.setCurrentLayer(1); refreshDisplay(); });
-    addButton(layer2, "LAYER 2", [this] { processor.setCurrentLayer(2); refreshDisplay(); });
-    addButton(layer3, "LAYER 3", [this] { processor.setCurrentLayer(3); refreshDisplay(); });
+    addButton(layer1, "LAYER 1", [this] { proc.setCurrentLayer(1); refreshDisplay(); });
+    addButton(layer2, "LAYER 2", [this] { proc.setCurrentLayer(2); refreshDisplay(); });
+    addButton(layer3, "LAYER 3", [this] { proc.setCurrentLayer(3); refreshDisplay(); });
 
     const std::array<juce::String, 12> keys { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "-", "." };
     for (size_t i = 0; i < keys.size(); ++i)
     {
         keypad[i] = std::make_unique<juce::TextButton>(keys[i]);
         keypad[i]->onClick = [this, key = keys[i]] {
-            processor.selectMode("KEY " + key);
+            proc.selectMode("KEY " + key);
             refreshDisplay();
         };
         addAndMakeVisible(*keypad[i]);
@@ -81,7 +81,7 @@ K2000AudioProcessorEditor::K2000AudioProcessorEditor(K2000AudioProcessor& p)
     dataWheel.setRange(0, 127, 1);
     dataWheel.setValue(0);
     dataWheel.onValueChange = [this] {
-        processor.setCurrentProgram(static_cast<int>(dataWheel.getValue()));
+        proc.setCurrentProgram(static_cast<int>(dataWheel.getValue()));
         refreshDisplay();
     };
     addAndMakeVisible(dataWheel);
@@ -100,10 +100,10 @@ K2000AudioProcessorEditor::K2000AudioProcessorEditor(K2000AudioProcessor& p)
         slider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
         slider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 72, 18);
         slider.setRange(controlMins[i], controlMaxs[i], i == 0 ? 1.0 : 0.001);
-        slider.setValue(processor.getToneParameter(controlNames[i]));
+        slider.setValue(proc.getToneParameter(controlNames[i]));
         slider.setColour(juce::Slider::rotarySliderFillColourId, amber);
         slider.onValueChange = [this, i, controlNames] {
-            processor.setToneParameter(controlNames[i], static_cast<float>(toneControls[i].getValue()));
+            proc.setToneParameter(controlNames[i], static_cast<float>(toneControls[i].getValue()));
         };
         addAndMakeVisible(slider);
         toneLabels[i].setText(controlTitles[i], juce::dontSendNotification);
@@ -128,23 +128,23 @@ void K2000AudioProcessorEditor::addButton(juce::TextButton& button, const juce::
 
 void K2000AudioProcessorEditor::chooseMode(const juce::String& mode)
 {
-    processor.selectMode(mode);
+    proc.selectMode(mode);
     refreshDisplay();
 }
 
 void K2000AudioProcessorEditor::refreshDisplay()
 {
-    lcdTitle.setText("K2000R     " + processor.getMode() + " MODE       MIDI: CH 1",
+    lcdTitle.setText("K2000R     " + proc.getMode() + " MODE       MIDI: CH 1",
                      juce::dontSendNotification);
-    lcdLine1.setText("PROGRAM  " + juce::String(processor.getCurrentProgram() + 1).paddedLeft('0', 3)
-                     + "   " + processor.getProgramName(processor.getCurrentProgram()),
+    lcdLine1.setText("PROGRAM  " + juce::String(proc.getCurrentProgram() + 1).paddedLeft('0', 3)
+                     + "   " + proc.getProgramName(proc.getCurrentProgram()),
                      juce::dontSendNotification);
-    lcdLine2.setText("LAYER " + juce::String(processor.getCurrentLayer())
+    lcdLine2.setText("LAYER " + juce::String(proc.getCurrentLayer())
                      + "     KEYMAP: --      ALG: --      OUTPUT: MAIN",
                      juce::dontSendNotification);
     lcdFooter.setText("PITCH     KEYMAP     PITCH     AMP      OUTPUT     MORE",
                       juce::dontSendNotification);
-    dataWheel.setValue(processor.getCurrentProgram(), juce::dontSendNotification);
+    dataWheel.setValue(proc.getCurrentProgram(), juce::dontSendNotification);
 }
 
 void K2000AudioProcessorEditor::paint(juce::Graphics& g)
