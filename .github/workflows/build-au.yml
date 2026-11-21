@@ -51,6 +51,14 @@ jobs:
           fi
           plutil -lint "build/K2000_artefacts/Release/AU/K2000.component/Contents/Info.plist"
 
+      - name: Validate AU with Apple's Audio Unit validator
+        run: |
+          set -o pipefail
+          mkdir -p "$HOME/Library/Audio/Plug-Ins/Components"
+          ditto "build/K2000_artefacts/Release/AU/K2000.component" "$HOME/Library/Audio/Plug-Ins/Components/K2000.component"
+          /usr/bin/auval -v aumu K2Au K2Lb | tee auval-validation.log
+          grep -q "PASS" auval-validation.log
+
       - name: Package AU bundle
         run: |
           ditto -c -k --sequesterRsrc --keepParent "build/K2000_artefacts/Release/AU/K2000.component" "K2000-AU-macOS-Intel.zip"
