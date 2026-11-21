@@ -91,6 +91,29 @@ K2000AudioProcessorEditor::K2000AudioProcessorEditor(K2000AudioProcessor& p)
     wheelLabel.setJustificationType(juce::Justification::centred);
     addAndMakeVisible(wheelLabel);
 
+    const std::array<juce::String, 4> controlNames { "CUTOFF", "ATTACK", "RELEASE", "REVERB" };
+    const std::array<juce::String, 4> controlTitles { "FILTER CUTOFF", "AMP ATTACK", "AMP RELEASE", "REVERB MIX" };
+    const std::array<float, 4> controlMins { 80.0f, 0.001f, 0.02f, 0.0f };
+    const std::array<float, 4> controlMaxs { 18000.0f, 3.0f, 5.0f, 1.0f };
+    for (size_t i = 0; i < toneControls.size(); ++i)
+    {
+        auto& slider = toneControls[i];
+        slider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+        slider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 72, 18);
+        slider.setRange(controlMins[i], controlMaxs[i], i == 0 ? 1.0 : 0.001);
+        slider.setValue(processor.getToneParameter(controlNames[i]));
+        slider.setColour(juce::Slider::rotarySliderFillColourId, amber);
+        slider.onValueChange = [this, i, controlNames] {
+            processor.setToneParameter(controlNames[i], static_cast<float>(toneControls[i].getValue()));
+        };
+        addAndMakeVisible(slider);
+        toneLabels[i].setText(controlTitles[i], juce::dontSendNotification);
+        toneLabels[i].setColour(juce::Label::textColourId, juce::Colours::white);
+        toneLabels[i].setJustificationType(juce::Justification::centred);
+        toneLabels[i].setFont(juce::Font(10.0f, juce::Font::bold));
+        addAndMakeVisible(toneLabels[i]);
+    }
+
     refreshDisplay();
 }
 
@@ -232,4 +255,11 @@ void K2000AudioProcessorEditor::resized()
 
     dataWheel.setBounds(w - 270, 330, 112, 112);
     wheelLabel.setBounds(w - 302, 442, 176, 20);
+
+    for (size_t i = 0; i < toneControls.size(); ++i)
+    {
+        const int x = 680 + static_cast<int>(i) * 118;
+        toneLabels[i].setBounds(x, 346, 112, 18);
+        toneControls[i].setBounds(x + 8, 365, 96, 96);
+    }
 }
