@@ -29,6 +29,9 @@ juce_add_plugin(K2000
     COPY_PLUGIN_AFTER_BUILD FALSE
 )
 
+# The source files include <JuceHeader.h>; explicitly generate that header.
+juce_generate_juce_header(K2000)
+
 target_sources(K2000 PRIVATE
     Source/PluginProcessor.cpp
     Source/PluginEditor.cpp
