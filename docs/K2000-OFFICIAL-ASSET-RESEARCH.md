@@ -45,3 +45,34 @@ The official page and download metadata have been inspected. The ZIP endpoints r
 - K2FACT: https://kurzweil.com/wp-content/uploads/2019/10/K2FACT.zip
 - K2KFARM: https://kurzweil.com/wp-content/uploads/2019/10/K2KFARM.zip
 - Musician's Guide: https://kurzweil.com/wp-content/uploads/2019/10/K2KMAN.zip
+
+
+## K2KFARM archive member names supplied by the user
+
+The following list was transcribed from the user's inspection of the extracted K2KFARM archive. It is useful as an intake manifest, but the individual files have not yet been independently opened or parsed by the project tooling.
+
+| Archive member | User-supplied description |
+|---|---|
+| `ANACOMPS.KRZ` | Analog accompaniments and polyphonic synthesizers |
+| `ANALEADS.KRZ` | Analog lead sounds |
+| `ANAPADS.KRZ` | Analog pads |
+| `BASS.KRZ` | Bass sounds |
+| `BELLS.KRZ` | Bells and metallic/percussive sounds |
+| `BRASS.KRZ` | Brass instruments |
+| `DIGITAL.KRZ` | Digital synthesizer sounds |
+| `ENSEMBLE.KRZ` | Ensemble sounds |
+| `ETHEREAL.KRZ` | Atmospheric and texture sounds |
+| `GUITARS.KRZ` | Guitar sounds |
+| `HYBRIDS.KRZ` | Hybrid/combined sounds |
+| `HYBPERC.KRZ` | Hybrid percussion |
+| `K2KFACTO.KRZ` | Factory programs |
+| `ORGANS.KRZ` | Organ sounds |
+| `PNOEPNO.KRZ` | Acoustic and electric pianos |
+| `STRINGS.KRZ` | String instruments |
+
+### Parser priorities from this inventory
+
+1. Start with `K2KFACTO.KRZ` to establish a baseline factory-program import test.
+2. Use `ANALEADS.KRZ`, `ANACOMPS.KRZ`, `DIGITAL.KRZ` and `HYBRIDS.KRZ` as representative synth-program test cases.
+3. Include `GUITARS.KRZ` and `PNOEPNO.KRZ` to test multisample/keymap references and velocity/key-range structures.
+4. Do not assume that the .KRZ objects contain the underlying factory sample audio. Resolve program-to-keymap/sample references separately against the K2000 ROM/sample resources.
