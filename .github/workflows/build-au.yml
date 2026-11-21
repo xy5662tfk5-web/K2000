@@ -10,8 +10,8 @@ permissions:
 
 jobs:
   build-au:
-    # Intel runner produces an x86_64 AU. Pin the older Xcode 15.4 toolchain:
-    # Xcode 16's libc++ emitted a symbol unavailable on macOS Monterey.
+    # Intel runner produces an x86_64 AU. Use Xcode 16.2 rather than the newer
+    # default toolchain to avoid libc++ symbols unavailable on macOS Monterey.
     runs-on: macos-15-intel
     steps:
       - name: Check out K2000
@@ -24,9 +24,9 @@ jobs:
           ref: 8.0.6
           path: JUCE
 
-      - name: Select Monterey-compatible Xcode toolchain
+      - name: Select older Xcode toolchain
         run: |
-          sudo xcode-select --switch /Applications/Xcode_15.4.app/Contents/Developer
+          sudo xcode-select --switch /Applications/Xcode_16.2.app/Contents/Developer
           xcodebuild -version
           xcrun --sdk macosx --show-sdk-version
 
