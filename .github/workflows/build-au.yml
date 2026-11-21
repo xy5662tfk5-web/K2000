@@ -29,14 +29,25 @@ jobs:
       - name: Build Audio Unit
         run: cmake --build build --config Release --target K2000_AU --parallel 3
 
-      - name: Verify AU bundle exists
+      - name: Ad-hoc sign Audio Unit
+        run: |
+          codesign --force --deep --sign - "build/K2000_artefacts/Release/AU/K2000.component"
+          codesign --verify --deep --strict --verbose=2 "build/K2000_artefacts/Release/AU/K2000.component"
+
+      - name: Verify AU bundle
         run: |
           test -d "build/K2000_artefacts/Release/AU/K2000.component"
           file "build/K2000_artefacts/Release/AU/K2000.component/Contents/MacOS/K2000"
+          plutil -lint "build/K2000_artefacts/Release/AU/K2000.component/Contents/Info.plist"
+
+      - name: Package AU bundle
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent "build/K2000_artefacts/Release/AU/K2000.component" "K2000-AU-macOS-Intel.zip"
+          unzip -l "K2000-AU-macOS-Intel.zip"
 
       - name: Upload AU artifact
         uses: actions/upload-artifact@v4
         with:
           name: K2000-AU-macOS-Intel
-          path: build/K2000_artefacts/Release/AU/K2000.component
+          path: K2000-AU-macOS-Intel.zip
           if-no-files-found: error
