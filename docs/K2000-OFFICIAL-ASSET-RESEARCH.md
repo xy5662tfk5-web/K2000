@@ -76,3 +76,33 @@ The following list was transcribed from the user's inspection of the extracted K
 2. Use `ANALEADS.KRZ`, `ANACOMPS.KRZ`, `DIGITAL.KRZ` and `HYBRIDS.KRZ` as representative synth-program test cases.
 3. Include `GUITARS.KRZ` and `PNOEPNO.KRZ` to test multisample/keymap references and velocity/key-range structures.
 4. Do not assume that the .KRZ objects contain the underlying factory sample audio. Resolve program-to-keymap/sample references separately against the K2000 ROM/sample resources.
+
+## External engineering lead: psobot/k2000
+
+Research date: 2026-11-21
+
+A public MIT-licensed Python project, [psobot/k2000](https://github.com/psobot/k2000), provides a substantial reference implementation for communicating with K2000/K2500/K2600 instruments over MIDI SysEx.
+
+Confirmed capabilities from its README and source:
+- reads and writes Kurzweil object data through SysEx;
+- exposes object proxies for Programs, Keymaps, Effects, Setups and other object types;
+- implements SysEx messages for object directory/info, dump, load, read, write and bank-read operations;
+- can retrieve a program name and raw program data from a connected instrument.
+
+Important limitation: this is an instrument communication library, **not a demonstrated offline KRZ file parser**. It cannot be dropped into the AU plugin as a file reader without further work. Its value is as a documented reference for Kurzweil object types, binary object payloads, and SysEx transport. Its README lists Python 3.8–3.10 and dependencies including NumPy, Pillow, attrs and MIDI support, so it is not automatically a lightweight dependency for the plugin.
+
+A separate utility, K2KList, is described by Sweetwater as listing the objects in a K2000 disk file with object size and ID. This is a promising historical reference for offline file inventory, but its binary and source availability still need to be checked before relying on it.
+
+### Consequence for our implementation
+
+Do not copy the SysEx transport layer into the AU plugin. Instead:
+1. Treat psobot/k2000 as a reference for object type IDs, metadata and object payload handling.
+2. Continue investigating the offline KRZ container independently.
+3. Reuse only format details that can be confirmed against the official manual or actual bank bytes.
+4. Keep the future plugin's file parser and its MIDI/SysEx integration as separate modules.
+
+Sources:
+- https://github.com/psobot/k2000
+- https://github.com/psobot/k2000/blob/main/k2000/messages.py
+- https://github.com/psobot/k2000/blob/main/k2000/client.py
+- https://www.sweetwater.com/sweetcare/kurzweil-k2000-sounds-and-software/
