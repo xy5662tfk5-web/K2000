@@ -4,10 +4,15 @@ project(K2000AU VERSION 0.1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if(NOT DEFINED JUCE_DIR AND DEFINED ENV{JUCE_DIR})
-    set(JUCE_DIR "$ENV{JUCE_DIR}")
+# CI checks out JUCE into ./JUCE. Local builds may still use an installed JUCE package.
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/JUCE/CMakeLists.txt")
+    add_subdirectory(JUCE)
+else()
+    if(NOT DEFINED JUCE_DIR AND DEFINED ENV{JUCE_DIR})
+        set(JUCE_DIR "$ENV{JUCE_DIR}")
+    endif()
+    find_package(JUCE CONFIG REQUIRED)
 endif()
-find_package(JUCE CONFIG REQUIRED)
 
 juce_add_plugin(K2000
     COMPANY_NAME "K2000 Lab"
