@@ -10,8 +10,8 @@ permissions:
 
 jobs:
   build-au:
-    # Intel runner produces an x86_64 AU. Use Xcode 16.2 rather than the newer
-    # default toolchain to avoid libc++ symbols unavailable on macOS Monterey.
+    # Intel runner produces an x86_64 AU. Use Xcode 15.4 SDK to avoid macOS 15 API removals in JUCE 7
+    # while keeping an Intel x86_64 runner to avoid libc++ symbols unavailable on macOS Monterey.
     runs-on: macos-15-intel
     steps:
       - name: Check out K2000
@@ -26,7 +26,7 @@ jobs:
 
       - name: Select older Xcode toolchain
         run: |
-          sudo xcode-select --switch /Applications/Xcode_16.2.app/Contents/Developer
+          sudo xcode-select --switch /Applications/Xcode_15.4.app/Contents/Developer
           xcodebuild -version
           xcrun --sdk macosx --show-sdk-version
 
