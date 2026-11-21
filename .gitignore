@@ -1,0 +1,10 @@
+build/
+cmake-build-*/
+.DS_Store
+*.user
+*.suo
+*.xcodeproj/
+*.xcworkspace/
+*.component
+*.vst3
+*.app
