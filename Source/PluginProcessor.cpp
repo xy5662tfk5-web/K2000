@@ -100,9 +100,10 @@ void K2000AudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::M
     reverbParams.wetLevel = reverbMix;
     reverbParams.dryLevel = 1.0f - reverbMix * 0.55f;
     reverb.setParameters(reverbParams);
-    reverb.processStereo(buffer.getWritePointer(0),
-                         buffer.getNumChannels() > 1 ? buffer.getWritePointer(1) : buffer.getWritePointer(0),
-                         buffer.getNumSamples());
+    if (buffer.getNumChannels() > 1)
+        reverb.processStereo(buffer.getWritePointer(0), buffer.getWritePointer(1), buffer.getNumSamples());
+    else if (buffer.getNumChannels() == 1)
+        reverb.processMono(buffer.getWritePointer(0), buffer.getNumSamples());
 }
 
 void K2000AudioProcessor::setCurrentProgram(int index) { currentProgram = juce::jlimit(0, 127, index); }
